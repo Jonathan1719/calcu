@@ -29,18 +29,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython virtualenv sh
 
-      - name: Build APK with Stable NDK
+      - name: Generate and Build with Stable Config
         run: |
-          # 1. Forzar una versión de NDK estable modificando directamente el archivo de configuración antes de compilar
-          if [ -f buildozer.spec ]; then
-            sed -i 's/# android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
-            sed -i 's/android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
-          fi
+          # 1. Si no existe un buildozer.spec, creamos uno base. Si existe, lo borramos para evitar configuraciones corruptas.
+          rm -f buildozer.spec
+          buildozer init
           
-          # 2. Limpiar cualquier residuo previo de compilaciones fallidas
+          # 2. Reemplazar valores críticos con configuraciones ultra-estables para GitHub Actions
+          sed -i 's/# android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
+          sed -i 's/android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
+          sed -i 's/android.api = .*/android.api = 33/' buildozer.spec
+          sed -i 's/requirements = .*/requirements = python3, kivy==2.3.0, pillow, jpeg, png/' buildozer.spec
+          
+          # 3. Limpieza profunda del espacio de trabajo de compilación anterior
           buildozer android clean
           
-          # 3. Compilar la aplicación
+          # 4. Compilar en modo debug de manera directa
           buildozer android debug
 
       - name: Upload APK
