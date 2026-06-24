@@ -29,26 +29,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython virtualenv sh
 
-      - name: Generate and Build with Stable Config
+      - name: Prepare Spec and Build APK
         run: |
-          # 1. Si no existe un buildozer.spec, creamos uno base. Si existe, lo borramos para evitar configuraciones corruptas.
-          rm -f buildozer.spec
-          buildozer init
+          # 1. NO borres tu buildozer.spec. En su lugar, asegúrate de que acepte la licencia automáticamente.
+          # Esto descomenta y activa android.accept_sdk_license = True en tu archivo real.
+          sed -i 's/#\s*android.accept_sdk_license\s*=\s*False/android.accept_sdk_license = True/' buildozer.spec
           
-          # 2. Reemplazar valores críticos con configuraciones ultra-estables para GitHub Actions
-          sed -i 's/# android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
-          sed -i 's/android.ndk_version = .*/android.ndk_version = 26b/' buildozer.spec
-          sed -i 's/android.api = .*/android.api = 33/' buildozer.spec
-          sed -i 's/requirements = .*/requirements = python3, kivy==2.3.0, pillow, jpeg, png/' buildozer.spec
+          # 2. Forzar que use la API 33 y la NDK estable si no estaban descomentadas (opcional pero seguro)
+          sed -i 's/#\s*android.api\s*=\s*33/android.api = 33/' buildozer.spec
           
-          # 3. Limpieza profunda del espacio de trabajo de compilación anterior
+          # 3. Limpieza profunda obligatoria para entornos CI
           buildozer android clean
           
-          # 4. Compilar en modo debug de manera directa
+          # 4. Compilar directamente (sin interactividad)
           buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: "**/*.apk"
+          path: bin/*.apk
