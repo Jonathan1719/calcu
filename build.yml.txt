@@ -1,18 +1,49 @@
-- name: Prepare Spec and Build APK
-        env:
-          # Esta variable fuerza la aceptación de licencias a nivel de SDK de Android
-          ANDROID_擺C_LICENSE: "True"
-          # Variable estándar para herramientas de Android en entornos CI
-          AUTO_ACCEPT_AND_SDK_LICENSES: "true"
-        run: |
-          # 1. Asegurar la aceptación desde el buildozer.spec forzando la línea si no existe
-          # Buscamos si existe la propiedad; si no, la añadimos al final de la sección [app]
-          grep -q "android.accept_sdk_license" buildozer.spec && \
-            sed -i 's/.*android.accept_sdk_license.*/android.accept_sdk_license = True/' buildozer.spec || \
-            sed -i '/\[app\]/a android.accept_sdk_license = True' buildozer.spec
-          
-          # 2. Limpieza profunda del entorno para borrar residuos corruptos de compilaciones previas
-          buildozer android clean
-          
-          # 3. Compilar de manera directa (sin 'yes |')
-          buildozer android debug
+name: CI
+
+on:
+push:
+branches:
+- main
+
+jobs:
+build:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: "3.10"
+
+  - name: Install Android Build Dependencies
+    run: |
+      sudo apt update
+      sudo apt install -y \
+        git zip unzip openjdk-17-jdk \
+        autoconf libtool pkg-config \
+        zlib1g-dev libncurses5-dev \
+        libgdbm-dev libssl-dev \
+        libffi-dev libsqlite3-dev \
+        tk-dev libgdbm-compat-dev \
+        libsdl2-dev libsdl2-image-dev \
+        libsdl2-mixer-dev libsdl2-ttf-dev
+
+  - name: Install Buildozer
+    run: |
+      python -m pip install --upgrade pip
+      pip install buildozer cython virtualenv
+
+  - name: Build APK
+    run: |
+      buildozer android debug
+
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: apk
+      path: bin/*.apk
+```
