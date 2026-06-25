@@ -1,4 +1,4 @@
-name: Build Android APK (STABLE PRO)
+name: Build Android APK (FINAL STABLE)
 
 on:
   push:
@@ -12,10 +12,9 @@ jobs:
     env:
       ANDROID_SDK_ROOT: /home/runner/android-sdk
       ANDROID_HOME: /home/runner/android-sdk
-      PATH: /home/runner/android-sdk/cmdline-tools/latest/bin:/home/runner/android-sdk/platform-tools:${PATH}
 
     steps:
-      # 1. Clonar repo
+      # 1. Checkout (NO tocar PATH aquí nunca)
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -25,19 +24,27 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 3. Dependencias del sistema
+      # 3. Sistema (tar, unzip, etc vienen aquí asegurados)
       - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip wget curl openjdk-17-jdk build-essential
+          sudo apt install -y \
+            git zip unzip wget curl \
+            openjdk-17-jdk \
+            build-essential \
+            tar
+
+          # Verificación crítica
+          which tar
+          tar --version
 
       # 4. Python deps
-      - name: Install Buildozer
+      - name: Install Buildozer dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir buildozer cython setuptools wheel
 
-      # 5. Android SDK (SIN mv, SIN ERRORES)
+      # 5. Android SDK (SEGURO)
       - name: Install Android SDK
         run: |
           set -e
@@ -48,20 +55,21 @@ jobs:
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
           unzip -q tools.zip
 
-          # FIX REAL: mover a estructura correcta SIN errores
+          # estructura correcta (sin romper nada)
           mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
           mv cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
 
+      # 6. Configurar sdkmanager
+      - name: Configure SDK
+        run: |
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
           yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
           sdkmanager --sdk_root=$ANDROID_SDK_ROOT --update
 
-      # 6. Instalar Android packages + NDK
+      # 7. Instalar Android tools
       - name: Install Android packages
         run: |
-          set -e
-
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
           yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
@@ -70,21 +78,21 @@ jobs:
             "build-tools;33.0.2" \
             "ndk;25.2.9519653"
 
-      # 7. Cache (acelera builds)
+      # 8. Cache (acelera builds)
       - name: Cache Buildozer
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             ~/.gradle
-          key: buildozer-cache-${{ runner.os }}
+          key: buildozer-${{ runner.os }}
 
-      # 8. Build APK
+      # 9. Build APK
       - name: Build APK
         run: |
           buildozer -v android debug
 
-      # 9. Subir APK
+      # 10. Subir APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
