@@ -1,4 +1,4 @@
-name: Build Android APK (FINAL STABLE FIX)
+name: Build Android APK (NO AIDL FIXED)
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       ANDROID_HOME: /home/runner/android-sdk
 
     steps:
-      # 1. Clonar repo
+      # 1. Repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 3. Sistema base (evita errores raros como tar missing)
+      # 3. Sistema base (evita errores raros)
       - name: Install system dependencies
         run: |
           sudo apt update
@@ -33,17 +33,16 @@ jobs:
             openjdk-17-jdk \
             build-essential
 
-          # check crítico
           which tar
           tar --version
 
-      # 4. Buildozer + dependencias Python
+      # 4. Buildozer
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir buildozer cython setuptools wheel
 
-      # 5. Android SDK (CORRECTO)
+      # 5. Android SDK limpio (SIN errores de cmdline-tools)
       - name: Install Android SDK
         run: |
           set -e
@@ -57,7 +56,7 @@ jobs:
           mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
           mv cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
 
-      # 6. SDKMANAGER + licencias (SIN INTERACCIÓN)
+      # 6. SDKMANAGER + licencias
       - name: Setup SDK and accept licenses
         run: |
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
@@ -65,7 +64,7 @@ jobs:
           yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
           sdkmanager --sdk_root=$ANDROID_SDK_ROOT --update
 
-      # 7. Instalar Android (ESTABLE - NO 37)
+      # 7. INSTALAR SOLO VERSIONES ESTABLES (CLAVE PARA AIDL)
       - name: Install Android packages
         run: |
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
@@ -76,7 +75,13 @@ jobs:
             "build-tools;33.0.2" \
             "ndk;25.2.9519653"
 
-      # 8. Cache (acelera builds)
+      # 8. FORZAR QUE BUILDOZER USE ESTE SDK (FIX AIDL REAL)
+      - name: Force Buildozer SDK path
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          ln -sf $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk
+
+      # 9. Cache (más rápido)
       - name: Cache Buildozer
         uses: actions/cache@v4
         with:
@@ -85,12 +90,12 @@ jobs:
             ~/.gradle
           key: buildozer-cache-${{ runner.os }}
 
-      # 9. Build APK (VERBOSE para ver errores reales si ocurre algo)
+      # 10. Build APK
       - name: Build APK
         run: |
           buildozer -v android debug
 
-      # 10. Subir APK
+      # 11. Subir APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
