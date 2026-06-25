@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Clonar repo
+      # 1. Clonar repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -20,57 +20,49 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 3. Dependencias base
+      # 3. Dependencias del sistema
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y wget unzip openjdk-17-jdk git
 
-      # 4. Instalar Buildozer
-      - name: Install Python tools
+      # 4. Buildozer
+      - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython kivy
 
-      # 5. Instalar Android SDK manual (FIX AIDL)
+      # 5. Android SDK (LIMPIO Y CORRECTO)
       - name: Install Android SDK
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
+          mkdir -p $HOME/android-sdk
           cd $HOME/android-sdk
 
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip tools.zip
+          unzip tools.zip -d cmdline-tools-temp
 
           mkdir -p cmdline-tools/latest
-          mv cmdline-tools/* cmdline-tools/latest/
+          mv cmdline-tools-temp/cmdline-tools/* cmdline-tools/latest/
 
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_ENV
 
       # 6. Licencias
       - name: Accept licenses
         run: yes | sdkmanager --sdk_root=$HOME/android-sdk --licenses || true
 
-      # 7. Instalar SDK (IMPORTANTE: FIX AIDL)
+      # 7. SDK packages (FIX AIDL)
       - name: Install Android packages
         run: |
           sdkmanager --sdk_root=$HOME/android-sdk "platform-tools"
           sdkmanager --sdk_root=$HOME/android-sdk "platforms;android-33"
           sdkmanager --sdk_root=$HOME/android-sdk "build-tools;33.0.2"
 
-      # 8. 🔍 DEBUG REAL (esto te muestra el error verdadero)
-      - name: Debug environment
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls -R $HOME/android-sdk || true
-          sdkmanager --list || true
-
-      # 9. Build APK (VERBOSE)
+      # 8. Build APK
       - name: Build APK
         run: buildozer -v android debug
         env:
-          ANDROIDSDK: $HOME/android-sdk
           ANDROID_HOME: $HOME/android-sdk
+          ANDROIDSDK: $HOME/android-sdk
           ANDROID_SDK_ROOT: $HOME/android-sdk
