@@ -9,8 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_SDK_ROOT: /home/runner/android-sdk
+
     steps:
-      # 1. Clonar repo
+      # 1. Repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -23,50 +26,37 @@ jobs:
       # 3. Dependencias del sistema
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip git openjdk-17-jdk zip
+          sudo apt update
+          sudo apt install -y git zip unzip openjdk-17-jdk
 
-      # 4. Buildozer
+      # 4. Instalar Buildozer y Cython
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
-          pip install buildozer cython kivy
+          pip install buildozer cython
 
-      # 5. Android SDK (CORREGIDO Y LIMPIO)
+      # 5. Instalar Android SDK + cmdline-tools (IMPORTANTE)
       - name: Install Android SDK
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          export ANDROID_SDK_ROOT=$HOME/android-sdk
-
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          cd $ANDROID_HOME
-
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          
+          cd $ANDROID_SDK_ROOT
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-
           unzip tools.zip
+          
+          mv cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
 
-          # 🔥 FIX REAL: Google ZIP crea cmdline-tools dentro de cmdline-tools
-          mv cmdline-tools latest
-
-          rm tools.zip
-
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-      # 6. SDK packages (FIX sdkmanager path)
-      - name: Install SDK packages
-        run: |
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
 
+      # 6. Aceptar licencias
+      - name: Accept licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+
       # 7. Build APK
       - name: Build APK
-        run: buildozer android debug
-        env:
-          ANDROID_HOME: $HOME/android-sdk
-          ANDROID_SDK_ROOT: $HOME/android-sdk
+        run: |
+          buildozer android debug
