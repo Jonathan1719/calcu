@@ -1,4 +1,4 @@
-name: Build Android APK 
+name: Build Android APK (FULL FIX)
 
 on:
   push:
@@ -36,34 +36,42 @@ jobs:
           python -m pip install --upgrade pip
           pip install --no-cache-dir buildozer cython setuptools wheel
 
-      # 5. Dependencias Python (CLAVE FIX)
-      - name: Install Python dependencies
-        run: |
-          pip install kivy==2.2.1 pillow kivymd==1.2.0
-
-      # 6. Android SDK (Buildozer lo maneja, pero aseguramos base)
+      # 5. Instalar Android SDK (cmdline-tools correcto)
       - name: Install Android SDK
         run: |
           set -e
-          mkdir -p ~/.buildozer/android/platform
+
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
           cd /tmp
 
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
           unzip -q sdk.zip
 
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-          mv cmdline-tools/* ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
+          mv cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
+
+      # 6. FIX CLAVE: sdkmanager legacy path (TU ERROR)
+      - name: Fix sdkmanager legacy path
+        run: |
+          set -e
+
+          mkdir -p $ANDROID_SDK_ROOT/tools/bin
+
+          ln -sf $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+                 $ANDROID_SDK_ROOT/tools/bin/sdkmanager
+
+          echo "sdkmanager legacy fix applied"
 
       # 7. Licencias SDK
       - name: Accept licenses
         run: |
-          export PATH=~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$PATH
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
           yes | sdkmanager --licenses
 
-      # 8. SDK packages estables (SIN 37)
+      # 8. Instalar Android estable (NO 37)
       - name: Install Android packages
         run: |
-          export PATH=~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$PATH
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
           sdkmanager \
             "platform-tools" \
@@ -71,12 +79,14 @@ jobs:
             "build-tools;33.0.2" \
             "ndk;25.2.9519653"
 
-      # 9. Fix Buildozer path
-      - name: Force Buildozer SDK path
-        run: |
-          mkdir -p ~/.buildozer/android/platform
-          ln -sf ~/.buildozer/android/platform/android-sdk \
-                 ~/.buildozer/android/platform/android-sdk
+      # 9. Cache (opcional pero recomendado)
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            ~/.gradle
+          key: buildozer-cache-${{ runner.os }}
 
       # 10. Build APK
       - name: Build APK
