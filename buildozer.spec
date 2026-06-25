@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.2.1,pillow,kivymd==1.2.0
+requirements = python3,kivy==2.2.1,pillow
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
@@ -100,7 +100,7 @@ fullscreen = 0
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 34
+#android.api = 33
 
 # (int) Minimum API your APK / AAB will support.
 #android.minapi = 21
@@ -109,7 +109,7 @@ fullscreen = 0
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 25b
+#android.ndk = 25.2.9519653
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 #android.ndk_api = 21
