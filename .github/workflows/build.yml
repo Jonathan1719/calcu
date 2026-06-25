@@ -1,4 +1,4 @@
-name: Build Android APK (Kivy Stable)
+name: Build Android APK 
 
 on:
   push:
