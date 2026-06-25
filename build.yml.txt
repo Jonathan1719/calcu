@@ -1,50 +1,45 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Clonar repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Setup Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 3. Aceptar licencias de Android
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses || true
+
+      # 4. Instalar componentes Android
+      - name: Install Android components
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-33"
+          sdkmanager "build-tools;37.0.0" || true
+
+      # 5. Instalar Python y Buildozer
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y \
-            git zip unzip openjdk-17-jdk \
-            autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev \
-            libgdbm-dev libssl-dev \
-            libffi-dev libsqlite3-dev \
-            tk-dev libgdbm-compat-dev \
-            libsdl2-dev libsdl2-image-dev \
-            libsdl2-mixer-dev libsdl2-ttf-dev
-
-      - name: Install Buildozer
+      - name: Install Buildozer dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install buildozer==1.5.0
-          pip install cython==0.29.36
-          pip install virtualenv
+          pip install buildozer cython kivy
 
-      - name: Build APK
-        run: |
-          buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: bin/*.apk
+      # 6. Build APK
+      - name: Build APK with Buildozer
+        run: buildozer -v android debug
