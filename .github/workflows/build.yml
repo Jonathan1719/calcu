@@ -1,117 +1,42 @@
-name: Android CI - Enterprise Stable
+name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    env:
-      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+    runs-on: ubuntu-22.04
 
     steps:
-      # ======================
-      # REPO
-      # ======================
-      - name: Checkout
+      # 1. Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ======================
-      # PYTHON
-      # ======================
-      - name: Setup Python
+      # 2. Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # ======================
-      # SISTEMA
-      # ======================
-      - name: System deps
+      # 3. Dependencias del sistema (OBLIGATORIO para AIDL + compilación)
+      - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip wget curl tar openjdk-17-jdk build-essential
+          sudo apt install -y \
+            git zip unzip openjdk-17-jdk \
+            autoconf automake libtool pkg-config \
+            cmake build-essential \
+            libffi-dev libssl-dev \
+            libsqlite3-dev
 
-      # ======================
-      # BUILDOZER
-      # ======================
+      # 4. Python tools
       - name: Install Buildozer
         run: |
-          python -m pip install --upgrade pip
-          pip install buildozer cython setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel
+          pip install cython==0.29.36 buildozer==1.5.0
 
-      # ======================
-      # PYTHON DEPENDENCIES (CLAVE)
-      # ======================
-      - name: Install Python deps
-        run: |
-          pip install kivymd==1.2.0 pillow kivy==2.2.1
-
-      # ======================
-      # ANDROID SDK CLEAN
-      # ======================
-      - name: Install Android SDK
-        run: |
-          set -e
-
-          SDK=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK/cmdline-tools
-
-          cd /tmp
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
-          unzip -q sdk.zip
-
-          mkdir -p $SDK/cmdline-tools/latest
-          mv cmdline-tools/* $SDK/cmdline-tools/latest/
-
-      # ======================
-      # FIX SDKMANAGER LEGACY ERROR (TU ERROR ACTUAL)
-      # ======================
-      - name: Fix sdkmanager legacy path
-        run: |
-          SDK=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK/tools/bin
-
-          ln -sf $SDK/cmdline-tools/latest/bin/sdkmanager \
-                 $SDK/tools/bin/sdkmanager
-
-      # ======================
-      # LICENCIAS
-      # ======================
-      - name: Accept licenses
-        run: |
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-          yes | sdkmanager --licenses
-
-      # ======================
-      # PACKAGES ANDROID
-      # ======================
-      - name: Install Android packages
-        run: |
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-33" \
-            "build-tools;33.0.2" \
-            "ndk;25.2.9519653"
-
-      # ======================
-      # BUILD
-      # ======================
+      # 5. Build APK (todo automático)
       - name: Build APK
         run: |
           buildozer -v android debug
-
-      # ======================
-      # OUTPUT
-      # ======================
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: bin/*.apk
