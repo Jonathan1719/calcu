@@ -1,9 +1,10 @@
-name: CI
+name: Build APK
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,11 +19,28 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Android Build Dependencies
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK Packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
+      - name: Install Linux Dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            git zip unzip openjdk-17-jdk \
+            git zip unzip \
             autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev \
             libgdbm-dev libssl-dev \
@@ -34,7 +52,9 @@ jobs:
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
-          pip install buildozer cython virtualenv
+          pip install buildozer==1.5.0
+          pip install cython==0.29.36
+          pip install virtualenv
 
       - name: Build APK
         run: |
