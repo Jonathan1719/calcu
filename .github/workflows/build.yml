@@ -14,32 +14,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      # 3. Aceptar licencias de Android
-      - name: Accept licenses
-        run: yes | sdkmanager --licenses || true
-
-      # 4. Instalar componentes Android
-      - name: Install Android components
-        run: |
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;37.0.0" || true
-
-      # 5. Instalar Python y Buildozer
+      # 2. Instalar Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install Buildozer dependencies
+      # 3. Instalar Buildozer y dependencias
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython kivy
 
-      # 6. Build APK
-      - name: Build APK with Buildozer
+      # 4. Setup Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 5. Aceptar licencias (IMPORTANTE)
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses || true
+
+      # 6. Instalar componentes Android (FIX AIDL)
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install "platform-tools"
+          sdkmanager --install "platforms;android-33"
+          sdkmanager --install "build-tools;33.0.2"
+
+      # 7. Build APK con Buildozer
+      - name: Build APK
         run: buildozer -v android debug
