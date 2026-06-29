@@ -1,92 +1,85 @@
-name: Build Android APK
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
-    env:
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-
     steps:
-      # =========================
-      # 1. CODE
-      # =========================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # =========================
-      # 2. PYTHON
-      # =========================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # =========================
-      # 3. SYSTEM DEPENDENCIES
-      # =========================
-      - name: Install system dependencies
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android Build Dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            git zip unzip wget curl \
-            openjdk-17-jdk \
-            autoconf automake libtool pkg-config \
-            cmake build-essential \
-            libffi-dev libssl-dev \
-            libsqlite3-dev
-
-      # =========================
-      # 4. FORCE JAVA 17 (IMPORTANTE)
-      # =========================
-      - name: Set JAVA_HOME to JDK 17
+            git zip unzip openjdk-17-jdk \
+            autoconf automake libtool m4 \
+            pkg-config \
+            zlib1g-dev libncurses5-dev libgdbm-dev \
+            libssl-dev libffi-dev libsqlite3-dev \
+            tk-dev libgdbm-compat-dev \
+            libreadline-dev liblzma-dev \
+            cmake ninja-build
+          
+          # Rebuild libtool macros
+          sudo aclocal || true
+          sudo automake --force-missing || true
+          
+      - name: Configure Build Environment
         run: |
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
-          java -version
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+          libtoolize --force --copy --install || true
+          aclocal || true
+          autoconf || true
+          automake --force-missing --add-missing || true
 
-      # =========================
-      # 5. ANDROID SDK
-      # =========================
-      - name: Install Android SDK
-        run: |
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-
-          cd $ANDROID_SDK_ROOT/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
-          unzip commandlinetools-linux-13114758_latest.zip
-          mv cmdline-tools latest
-
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
-
-      # =========================
-      # 6. SDK PACKAGES
-      # =========================
-      - name: Accept SDK licenses + install packages
-        run: |
-          yes | sdkmanager --licenses || true
-
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
-
-      # =========================
-      # 7. BUILD DEPENDENCIES
-      # =========================
-      - name: Install Buildozer
+      - name: Install Buildozer and Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install cython==0.29.36 buildozer==1.5.0
+          pip install buildozer "Cython<3.0" virtualenv pycparser
 
-      # =========================
-      # 8. BUILD APK
-      # =========================
-      - name: Build APK
+      - name: Create Buildozer Config Cache Directory
+        run: mkdir -p ~/.buildozer
+
+      - name: Accept Android SDK Licenses
         run: |
-          buildozer -v android debug
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Build APK
+        env:
+          ANDROID_NDK_HOME: ""
+          ANDROID_NDK_ROOT: ""
+          ANDROID_NDK_LATEST_HOME: ""
+        run: |
+          buildozer android debug
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: bin/*.apk
+          if-no-files-found: error
+
+      - name: Upload Build Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build.log
