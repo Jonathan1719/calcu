@@ -12,14 +12,23 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
 
     steps:
+      # =========================
+      # 1. CODE
+      # =========================
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # =========================
+      # 2. PYTHON
+      # =========================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # =========================
+      # 3. SYSTEM DEPENDENCIES
+      # =========================
       - name: Install system dependencies
         run: |
           sudo apt update
@@ -32,7 +41,16 @@ jobs:
             libsqlite3-dev
 
       # =========================
-      # ANDROID SDK INSTALL
+      # 4. FORCE JAVA 17 (IMPORTANTE)
+      # =========================
+      - name: Set JAVA_HOME to JDK 17
+        run: |
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
+          java -version
+
+      # =========================
+      # 5. ANDROID SDK
       # =========================
       - name: Install Android SDK
         run: |
@@ -46,19 +64,29 @@ jobs:
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
 
+      # =========================
+      # 6. SDK PACKAGES
+      # =========================
       - name: Accept SDK licenses + install packages
         run: |
-          yes | sdkmanager --licenses
+          yes | sdkmanager --licenses || true
 
-          sdkmanager "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
 
+      # =========================
+      # 7. BUILD DEPENDENCIES
+      # =========================
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install cython==0.29.36 buildozer==1.5.0
 
+      # =========================
+      # 8. BUILD APK
+      # =========================
       - name: Build APK
         run: |
           buildozer -v android debug
