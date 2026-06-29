@@ -37,16 +37,17 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.2.1,pillow
+requirements = python3,kivy,kivymd,pillow
+
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
 
 # (str) Presplash of the application
-presplash.filename = %(source.dir)s/calcu.jpeg
+presplash.filename = %(source.dir)s/calcu.png
 
 # (str) Icon of the application
-icon.filename = %(source.dir)s/calcu.jpeg
+icon.filename = %(source.dir)s/calcu.png
 
 # (list) Supported orientations
 # Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
@@ -66,7 +67,7 @@ orientation = portrait
 osx.python_version = 3
 
 # Kivy version to use
-osx.kivy_version = 1.9.1
+osx.kivy_version = 2.3.0
 
 #
 # Android specific
@@ -100,19 +101,19 @@ fullscreen = 0
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 33
+android.api = 33
 
 # (int) Minimum API your APK / AAB will support.
-#android.minapi = 21
+android.minapi = 24
 
 # (int) Android SDK version to use
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 25.2.9519653
+android.ndk = 25c
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
-#android.ndk_api = 21
+android.ndk_api = 24
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 #android.private_storage = True
@@ -135,7 +136,7 @@ fullscreen = 0
 # agreements. This is intended for automation only. If set to False,
 # the default, you will be shown the license when first running
 # buildozer.
-# android.accept_sdk_license = True
+android.accept_sdk_license = True
 
 # (str) Android entry point, default is ok for Kivy-based app
 #android.entrypoint = org.kivy.android.PythonActivity
@@ -335,7 +336,7 @@ android.allow_backup = True
 #p4a.hook =
 
 # (str) Bootstrap to use for android builds
-p4a.bootstrap = sdl2
+# p4a.bootstrap = sdl2
 
 # (int) port number to specify an explicit --port= p4a argument (eg for bootstrap flask)
 #p4a.port =
@@ -412,18 +413,18 @@ warn_on_root = 1
 # (str) Path to build output (i.e. .apk, .aab, .ipa) storage
 # bin_dir = ./bin
 
-#    -----------------------------------------------------------------------------
-#    List as sections
+#   -----------------------------------------------------------------------------
+#   List as sections
 #
-#    You can define all the "list" as [section:key].
-#    Each line will be considered as a option to the list.
-#    Let's take [app] / source.exclude_patterns.
-#    Instead of doing:
+#   You can define all the "list" as [section:key].
+#   Each line will be considered as a option to the list.
+#   Let's take [app] / source.exclude_patterns.
+#   Instead of doing:
 #
 #[app]
 #source.exclude_patterns = license,data/audio/*.wav,data/images/original/*
 #
-#    This can be translated into:
+#   This can be translated into:
 #
 #[app:source.exclude_patterns]
 #license
@@ -432,13 +433,13 @@ warn_on_root = 1
 #
 
 
-#    -----------------------------------------------------------------------------
-#    Profiles
+#   -----------------------------------------------------------------------------
+#   Profiles
 #
-#    You can extend section / key with a profile
-#    For example, you want to deploy a demo version of your application without
-#    HD content. You could first change the title to add "(demo)" in the name
-#    and extend the excluded directories to remove the HD content.
+#   You can extend section / key with a profile
+#   For example, you want to deploy a demo version of your application without
+#   HD content. You could first change the title to add "(demo)" in the name
+#   and extend the excluded directories to remove the HD content.
 #
 #[app@demo]
 #title = My Application (demo)
@@ -446,6 +447,6 @@ warn_on_root = 1
 #[app:source.exclude_patterns@demo]
 #images/hd/*
 #
-#    Then, invoke the command line with the "demo" profile:
+#   Then, invoke the command line with the "demo" profile:
 #
 #buildozer --profile demo android debug
